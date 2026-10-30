@@ -15,9 +15,15 @@ export const viewport: Viewport = {
   ],
 };
 
+// Runs before first paint: apply the saved theme, or the system one, so the page never flashes.
+const themeScript = `(function(){var t;try{t=localStorage.getItem("hr-theme")}catch(e){}if(t!=="light"&&t!=="dark")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.dataset.theme=t})()`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body>{children}</body>
     </html>
   );
