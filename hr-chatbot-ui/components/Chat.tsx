@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import RobotMascot, { type RobotState } from "@/components/RobotMascot";
+import ThemeToggle from "@/components/ThemeToggle";
 
 type Role = "user" | "assistant";
 type Message = { id: string; role: Role; content: string; error?: boolean };
@@ -44,9 +46,12 @@ export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [inputFocused, setInputFocused] = useState(false);
+  const [celebrating, setCelebrating] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const wasLoading = useRef(false);
 
   // Restore the previous conversation (n8n memory is keyed on sessionId).
   useEffect(() => {
@@ -74,6 +79,24 @@ export default function Chat() {
     el.style.height = "auto";
     el.style.height = Math.min(el.scrollHeight, 160) + "px";
   }, [input]);
+
+  // Celebrate briefly when a request finishes with a real reply (not on restored history).
+  useEffect(() => {
+    if (loading) {
+      wasLoading.current = true;
+      return;
+    }
+    if (!wasLoading.current) return;
+    wasLoading.current = false;
+    const last = messages[messages.length - 1];
+    if (last?.role === "assistant" && !last.error) setCelebrating(true);
+  }, [loading, messages]);
+
+  useEffect(() => {
+    if (!celebrating) return;
+    const t = setTimeout(() => setCelebrating(false), 1500);
+    return () => clearTimeout(t);
+  }, [celebrating]);
 
   const send = useCallback(
     async (text: string) => {
@@ -146,8 +169,19 @@ export default function Chat() {
 
   const empty = messages.length === 0;
 
+  const robotState: RobotState = loading
+    ? "thinking"
+    : inputFocused && input.trim()
+      ? "listening"
+      : celebrating
+        ? "happy"
+        : messages[messages.length - 1]?.error
+          ? "error"
+          : "idle";
+
   return (
     <div className="app">
+      <RobotMascot state={robotState} />
       <header className="header">
         <div className="brand">
           <div className="logo" aria-hidden>
@@ -160,12 +194,15 @@ export default function Chat() {
             <p>Answers from company HR policies</p>
           </div>
         </div>
-        <button className="ghost" onClick={newChat} disabled={loading || empty} title="Start a new conversation">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-          New chat
-        </button>
+        <div className="header-actions">
+          <ThemeToggle />
+          <button className="ghost" onClick={newChat} disabled={loading || empty} title="Start a new conversation">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            New chat
+          </button>
+        </div>
       </header>
 
       <main className="messages" ref={scrollRef} aria-live="polite">
@@ -239,6 +276,8 @@ export default function Chat() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={onKeyDown}
+              onFocus={() => setInputFocused(true)}
+              onBlur={() => setInputFocused(false)}
               placeholder="Ask an HR question…"
               rows={1}
               maxLength={2000}

@@ -14,26 +14,28 @@
   --error-text: #a3261b;
   --code-bg: #f0efea;
   --shadow: 0 1px 2px rgba(20, 24, 28, 0.06), 0 4px 16px rgba(20, 24, 28, 0.05);
+  color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #14171a;
-    --surface: #1d2125;
-    --border: #2d3237;
-    --text: #e8eaec;
-    --muted: #9aa1a8;
-    --accent: #3fb3a3;
-    --accent-hover: #5cc4b5;
-    --accent-soft: #1f3532;
-    --on-accent: #0c1a18;
-    --user-bubble: #2a6f66;
-    --user-text: #f2fbf9;
-    --error-bg: #3a1f1c;
-    --error-text: #f2a59c;
-    --code-bg: #262b30;
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-  }
+/* data-theme is set before first paint by the script in app/layout.tsx (saved choice or system
+   setting) and changed by the header toggle. */
+:root[data-theme="dark"] {
+  --bg: #14171a;
+  --surface: #1d2125;
+  --border: #2d3237;
+  --text: #e8eaec;
+  --muted: #9aa1a8;
+  --accent: #3fb3a3;
+  --accent-hover: #5cc4b5;
+  --accent-soft: #1f3532;
+  --on-accent: #0c1a18;
+  --user-bubble: #2a6f66;
+  --user-text: #f2fbf9;
+  --error-bg: #3a1f1c;
+  --error-text: #f2a59c;
+  --code-bg: #262b30;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  color-scheme: dark;
 }
 
 * {
@@ -119,6 +121,63 @@ button:disabled {
 }
 .ghost:disabled {
   opacity: 0.45;
+}
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Light/dark switch: the thumb position and icon follow data-theme, so it renders correctly
+   before hydration. */
+.theme-toggle {
+  display: inline-flex;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  border-radius: 999px;
+}
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.theme-toggle-track {
+  position: relative;
+  display: block;
+  width: 52px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+  transition: background 0.2s, border-color 0.2s;
+}
+.theme-toggle:hover .theme-toggle-track {
+  border-color: var(--accent);
+}
+.theme-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--accent);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.25s cubic-bezier(0.3, 1.3, 0.5, 1), background 0.2s;
+}
+[data-theme="dark"] .theme-toggle-thumb {
+  transform: translateX(24px);
+  background: var(--accent-soft);
+}
+.theme-toggle .icon-moon,
+[data-theme="dark"] .theme-toggle .icon-sun {
+  display: none;
+}
+[data-theme="dark"] .theme-toggle .icon-moon {
+  display: block;
 }
 
 /* ---------- Messages ---------- */
@@ -382,5 +441,388 @@ button:disabled {
   }
   .welcome {
     padding-top: 4vh;
+  }
+}
+
+/* ---------- Robot mascot (decorative, sits in the left gutter) ---------- */
+/* Where the robot is shown, nudge the chat column right and the robot left to give it room.
+   Doubling the left padding moves the centered column right by --chat-shift. */
+@media (min-width: 1024px) {
+  :root {
+    --chat-shift: 80px;
+    --robot-shift: 56px;
+  }
+  .messages,
+  .composer {
+    padding-left: calc(16px + 2 * var(--chat-shift));
+  }
+}
+.robot-mascot {
+  /* Robot palette, derived from the theme tokens so it follows light/dark mode.
+     Used by the SVG robot and read at runtime by the 3D robot. */
+  --rm-shell-hi: color-mix(in srgb, var(--surface) 70%, #ffffff);
+  --rm-shell: var(--surface);
+  --rm-shell-lo: color-mix(in srgb, var(--border) 85%, var(--muted));
+  --rm-edge: var(--border);
+  --rm-edge-strong: color-mix(in srgb, var(--border) 60%, var(--muted));
+  --rm-metal-hi: color-mix(in srgb, var(--muted) 45%, var(--surface));
+  --rm-metal-lo: var(--muted);
+  --rm-gloss: #ffffff;
+  --rm-rim: var(--accent);
+  --rm-screen-hi: color-mix(in srgb, var(--text) 85%, var(--accent));
+  --rm-screen: var(--text);
+  --rm-glow: color-mix(in srgb, var(--accent) 55%, #ffffff);
+  --rm-shadow: #000000;
+  --rm-h: 160px;
+  --rm-w: calc(var(--rm-h) * 2 / 3);
+  position: fixed;
+  top: calc(50% - 20px);
+  left: max(8px, calc(50% - 380px - var(--rm-w) - 20px - var(--robot-shift, 0px)));
+  width: var(--rm-w);
+  height: var(--rm-h);
+  transform: translateY(-50%);
+  pointer-events: none;
+  z-index: 1;
+  display: none;
+}
+[data-theme="dark"] .robot-mascot {
+  --rm-shell-hi: color-mix(in srgb, var(--surface) 50%, var(--muted));
+  --rm-shell: color-mix(in srgb, var(--surface) 65%, var(--muted));
+  --rm-shell-lo: var(--surface);
+  --rm-edge: color-mix(in srgb, var(--border) 60%, var(--muted));
+  --rm-edge-strong: var(--border);
+  --rm-metal-hi: var(--muted);
+  --rm-metal-lo: var(--border);
+  --rm-gloss: color-mix(in srgb, var(--text) 60%, transparent);
+  --rm-screen-hi: color-mix(in srgb, var(--bg) 80%, var(--accent));
+  --rm-screen: color-mix(in srgb, var(--bg) 60%, #000000);
+  --rm-glow: var(--accent-hover);
+}
+@media (min-width: 1024px) and (min-height: 540px) {
+  .robot-mascot {
+    display: block;
+  }
+}
+@media (min-width: 1240px) {
+  .robot-mascot {
+    --rm-h: 192px;
+  }
+}
+/* 3D mode (>= 1280px): a wider box; the SVG fades out once the canvas is ready */
+.robot-mascot.is-3d {
+  --rm-h: 270px;
+  --rm-w: 230px;
+}
+.robot-mascot > .rm,
+.rm-canvas {
+  position: absolute !important;
+  inset: 0;
+}
+.rm-canvas {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+.robot-mascot.is-ready .rm-canvas {
+  opacity: 1;
+}
+.robot-mascot > .rm {
+  transition: opacity 0.4s ease, visibility 0s linear 0.4s;
+}
+.robot-mascot.is-ready > .rm {
+  opacity: 0;
+  visibility: hidden;
+}
+.robot-mascot.is-ready > .rm * {
+  animation-play-state: paused;
+}
+.rm {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.rm-hit {
+  pointer-events: visiblePainted;
+  cursor: pointer;
+}
+.rm g,
+.rm ellipse,
+.rm rect,
+.rm circle,
+.rm path {
+  transform-box: view-box;
+}
+
+/* Idle float, shadow in sync */
+.rm-float {
+  animation: rm-float 3s ease-in-out infinite;
+}
+.rm-shadow {
+  transform-origin: 100px 286px;
+  animation: rm-shadow 3s ease-in-out infinite;
+}
+@keyframes rm-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-9px);
+  }
+}
+@keyframes rm-shadow {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(0.78);
+    opacity: 0.5;
+  }
+}
+
+/* Whole-body pose (error droop) */
+.rm-pose {
+  transform-origin: 100px 264px;
+  transition: transform 0.5s ease;
+}
+.rm[data-state="error"] .rm-pose {
+  transform: translateY(6px) scaleY(0.97);
+}
+
+/* Happy bounce / click hop */
+.rm-jump {
+  transform-origin: 100px 264px;
+}
+.rm[data-state="happy"] .rm-jump {
+  animation: rm-bounce 0.75s ease-out 2;
+}
+.rm.is-poked .rm-jump {
+  animation: rm-hop 0.8s ease-out;
+}
+@keyframes rm-bounce {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  20% {
+    transform: translateY(2px) scale(1.04, 0.96);
+  }
+  50% {
+    transform: translateY(-12px) scale(0.98, 1.02);
+  }
+}
+@keyframes rm-hop {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  15% {
+    transform: translateY(3px) scale(1.06, 0.93);
+  }
+  45% {
+    transform: translateY(-24px) scale(0.97, 1.04);
+  }
+  75% {
+    transform: translateY(1px) scale(1.03, 0.97);
+  }
+}
+
+/* Head: state pose (transition) + occasional idle tilt (animation) on separate groups */
+.rm-head-pose {
+  transform-origin: 100px 132px;
+  transition: transform 0.45s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+.rm[data-state="listening"] .rm-head-pose {
+  transform: rotate(7deg);
+}
+.rm[data-state="error"] .rm-head-pose {
+  transform: translateY(4px) rotate(-5deg);
+}
+.rm-head-idle {
+  transform-origin: 100px 132px;
+  animation: rm-tilt 9s ease-in-out infinite;
+}
+@keyframes rm-tilt {
+  0%,
+  62%,
+  92%,
+  100% {
+    transform: rotate(0);
+  }
+  70%,
+  84% {
+    transform: rotate(-5deg);
+  }
+}
+
+/* Arms */
+.rm-arm-l {
+  transform-origin: 39px 166px;
+  animation: rm-sway-l 3.4s ease-in-out infinite;
+}
+.rm-arm-r {
+  transform-origin: 161px 166px;
+  animation: rm-sway-r 3.4s ease-in-out infinite;
+}
+.rm[data-state="happy"] .rm-arm-r,
+.rm.is-poked .rm-arm-r {
+  animation: rm-wave 1.5s ease-in-out;
+}
+@keyframes rm-sway-l {
+  0%,
+  100% {
+    transform: rotate(2deg);
+  }
+  50% {
+    transform: rotate(6deg);
+  }
+}
+@keyframes rm-sway-r {
+  0%,
+  100% {
+    transform: rotate(-2deg);
+  }
+  50% {
+    transform: rotate(-6deg);
+  }
+}
+@keyframes rm-wave {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  22% {
+    transform: rotate(-150deg);
+  }
+  36% {
+    transform: rotate(-122deg);
+  }
+  50% {
+    transform: rotate(-155deg);
+  }
+  64% {
+    transform: rotate(-122deg);
+  }
+  80% {
+    transform: rotate(-145deg);
+  }
+}
+
+/* Face: variants cross-fade */
+.rm-v {
+  opacity: 0;
+  transform: scale(0.85);
+  transform-origin: 100px 90px;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.rm[data-state="idle"] :is(.rm-eyes-happy, .rm-mouth-smile),
+.rm[data-state="happy"] :is(.rm-eyes-happy, .rm-mouth-grin),
+.rm[data-state="listening"] :is(.rm-eyes-open, .rm-mouth-smile),
+.rm[data-state="thinking"] :is(.rm-eyes-think, .rm-mouth-flat),
+.rm[data-state="error"] :is(.rm-eyes-sad, .rm-mouth-frown) {
+  opacity: 1;
+  transform: none;
+}
+.rm-eyes {
+  transform-origin: 100px 82px;
+  transition: transform 0.08s ease;
+}
+.rm.is-blinking .rm-eyes {
+  transform: scaleY(0.1);
+}
+.rm-gaze {
+  transition: transform 0.35s ease;
+}
+.rm[data-state="listening"] .rm-gaze {
+  transform: translate(4px, 1px);
+}
+.rm-face {
+  transition: opacity 0.4s ease;
+}
+.rm[data-state="error"] .rm-face {
+  opacity: 0.7;
+}
+
+/* Thinking: bouncing dots, scan line, pulsing glow */
+.rm[data-state="thinking"] .rm-dot {
+  animation: rm-dot 1s ease-in-out infinite;
+}
+.rm[data-state="thinking"] .rm-dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.rm[data-state="thinking"] .rm-dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+@keyframes rm-dot {
+  0%,
+  70%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.55;
+  }
+  35% {
+    transform: translateY(-6px);
+    opacity: 1;
+  }
+}
+.rm-scan,
+.rm-screen-glow,
+.rm-screen-edge {
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.rm-screen-glow {
+  opacity: 0.35;
+}
+.rm[data-state="thinking"] .rm-scan {
+  opacity: 0.5;
+  animation: rm-scan 1.6s ease-in-out infinite alternate;
+}
+.rm[data-state="thinking"] .rm-screen-glow {
+  animation: rm-pulse 1.2s ease-in-out infinite;
+}
+.rm[data-state="thinking"] .rm-screen-edge {
+  animation: rm-pulse 1.2s ease-in-out infinite;
+}
+@keyframes rm-scan {
+  from {
+    transform: translateY(2px);
+  }
+  to {
+    transform: translateY(59px);
+  }
+}
+@keyframes rm-pulse {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-toggle-thumb {
+    transition: none;
+  }
+  .rm,
+  .rm * {
+    animation: none !important;
+  }
+  .rm-pose,
+  .rm-head-pose,
+  .rm-gaze,
+  .rm-eyes {
+    transition: none;
+  }
+  .rm[data-state="thinking"] .rm-screen-glow,
+  .rm[data-state="thinking"] .rm-screen-edge {
+    opacity: 0.6;
+  }
+  .rm[data-state="thinking"] .rm-scan {
+    opacity: 0;
   }
 }
