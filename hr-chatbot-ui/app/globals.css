@@ -486,14 +486,15 @@ button:disabled {
   display: none;
 }
 [data-theme="dark"] .robot-mascot {
-  --rm-shell-hi: color-mix(in srgb, var(--surface) 50%, var(--muted));
-  --rm-shell: color-mix(in srgb, var(--surface) 65%, var(--muted));
-  --rm-shell-lo: var(--surface);
-  --rm-edge: color-mix(in srgb, var(--border) 60%, var(--muted));
-  --rm-edge-strong: var(--border);
+  /* A soft light-grey shell: whiter than the dark surfaces, but dimmer than light mode's white */
+  --rm-shell-hi: color-mix(in srgb, var(--muted) 55%, #ffffff);
+  --rm-shell: color-mix(in srgb, var(--muted) 80%, #ffffff);
+  --rm-shell-lo: color-mix(in srgb, var(--muted) 80%, var(--surface));
+  --rm-edge: color-mix(in srgb, var(--muted) 80%, var(--border));
+  --rm-edge-strong: color-mix(in srgb, var(--muted) 60%, var(--border));
   --rm-metal-hi: var(--muted);
-  --rm-metal-lo: var(--border);
-  --rm-gloss: color-mix(in srgb, var(--text) 60%, transparent);
+  --rm-metal-lo: color-mix(in srgb, var(--muted) 50%, var(--border));
+  --rm-gloss: #ffffff;
   --rm-screen-hi: color-mix(in srgb, var(--bg) 80%, var(--accent));
   --rm-screen: color-mix(in srgb, var(--bg) 60%, #000000);
   --rm-glow: var(--accent-hover);
@@ -531,6 +532,13 @@ button:disabled {
 .robot-mascot.is-ready > .rm {
   opacity: 0;
   visibility: hidden;
+}
+/* Screens that will show the 3D robot (same query as MODE_3D_QUERY in RobotMascot.tsx): hide the
+   SVG from the first paint so it doesn't flash before the 3D robot fades in. */
+@media (min-width: 1280px) and (min-height: 600px) and (prefers-reduced-motion: no-preference) {
+  .robot-mascot:not(.no-3d) > .rm {
+    display: none;
+  }
 }
 .robot-mascot.is-ready > .rm * {
   animation-play-state: paused;

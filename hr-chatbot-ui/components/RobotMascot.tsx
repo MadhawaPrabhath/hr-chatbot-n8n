@@ -16,6 +16,7 @@ const prefersReducedMotion = () =>
 const RobotMascot3D = dynamic(() => import("./RobotMascot3D"), { ssr: false });
 
 // 3D only where there's room for it (the gutter beside the 760px column) and motion is welcome.
+// Keep in sync with the matching media query in globals.css that hides the SVG on these screens.
 const MODE_3D_QUERY = "(min-width: 1280px) and (min-height: 600px) and (prefers-reduced-motion: no-preference)";
 
 function supportsWebGL() {
@@ -29,15 +30,19 @@ function supportsWebGL() {
 
 function useCan3D() {
   const [can, setCan] = useState(false);
+  const [noWebGL, setNoWebGL] = useState(false);
   useEffect(() => {
-    if (!supportsWebGL()) return;
+    if (!supportsWebGL()) {
+      setNoWebGL(true);
+      return;
+    }
     const mq = window.matchMedia(MODE_3D_QUERY);
     const update = () => setCan(mq.matches);
     update();
     mq.addEventListener("change", update);
     return () => mq.removeEventListener("change", update);
   }, []);
-  return can;
+  return { can, noWebGL };
 }
 
 // If the 3D scene crashes (e.g. lost WebGL context), fall back to the SVG robot.
@@ -55,9 +60,10 @@ class SceneBoundary extends Component<{ onError: () => void; children: ReactNode
 }
 
 // Decorative mascot shown beside the chat: a 3D robot on large screens, the SVG robot otherwise.
-// The SVG stays underneath until the 3D canvas is ready, then fades out.
+// On 3D-capable screens CSS keeps the SVG hidden from the first paint, so nothing shows until the
+// 3D canvas fades in; .no-3d brings the SVG back if WebGL is missing or the scene fails.
 export default function RobotMascot({ state = "idle" }: { state?: RobotState }) {
-  const can3D = useCan3D();
+  const { can: can3D, noWebGL } = useCan3D();
   const [failed, setFailed] = useState(false);
   const [ready, setReady] = useState(false);
   const use3D = can3D && !failed;
@@ -67,7 +73,10 @@ export default function RobotMascot({ state = "idle" }: { state?: RobotState }) 
   }, [use3D]);
 
   return (
-    <div className={`robot-mascot${use3D ? " is-3d" : ""}${use3D && ready ? " is-ready" : ""}`} aria-hidden="true">
+    <div
+      className={`robot-mascot${use3D ? " is-3d" : ""}${use3D && ready ? " is-ready" : ""}${noWebGL || failed ? " no-3d" : ""}`}
+      aria-hidden="true"
+    >
       <RobotMascotSVG state={state} />
       {use3D && (
         <SceneBoundary onError={() => setFailed(true)}>

@@ -331,7 +331,6 @@ function fadeAll(group: THREE.Object3D | null, on: boolean, dt: number) {
 // ---------- Robot ----------
 
 function Robot({ state, colors }: { state: RobotState; colors: ThemeColors }) {
-  const gl = useThree((s) => s.gl);
   const clock = useThree((s) => s.clock);
 
   const assets = useMemo(() => {
@@ -410,9 +409,8 @@ function Robot({ state, colors }: { state: RobotState; colors: ThemeColors }) {
   const flat = useRef<THREE.Mesh>(null);
   const frown = useRef<THREE.Mesh>(null);
 
-  const look = useRef({ yaw: 0, pitch: 0 });
   const hovered = useRef(false);
-  const motion = useRef({ bodyYaw: 0, lean: 0, tilt: 0, droop: 0, gy: 0, gsquash: 0, gspin: 0, glean: 0, gtilt: 0, think: 0 });
+  const motion = useRef({ bodyYaw: 0, lean: 0, droop: 0, gy: 0, gsquash: 0, gspin: 0, glean: 0, gtilt: 0, think: 0 });
   const timers = useRef({ stateAt: 0, blinkAt: 2, nextGestureAt: 3, clickTrick: 0 });
   const gesture = useRef<{ name: GestureName; start: number; source: GestureSource } | null>(null);
   const lastGesture = useRef<GestureName | undefined>(undefined);
@@ -439,21 +437,13 @@ function Robot({ state, colors }: { state: RobotState; colors: ThemeColors }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, clock]);
 
-  // Head follows the cursor anywhere on the page.
-  useEffect(() => {
-    const onMove = (e: PointerEvent) => {
-      const r = gl.domElement.getBoundingClientRect();
-      const dx = e.clientX - (r.left + r.width / 2);
-      const dy = e.clientY - (r.top + r.height * 0.3);
-      look.current.yaw = clamp(Math.atan2(dx, 500), -0.6, 0.6);
-      look.current.pitch = clamp(Math.atan2(dy, 700), -0.3, 0.35);
-    };
-    window.addEventListener("pointermove", onMove);
-    return () => {
-      window.removeEventListener("pointermove", onMove);
+  // Reset the hover cursor if the robot unmounts while hovered.
+  useEffect(
+    () => () => {
       document.body.style.cursor = "";
-    };
-  }, [gl]);
+    },
+    []
+  );
 
   useFrame(({ clock }, delta) => {
     const dt = Math.min(delta, 0.1);
@@ -496,23 +486,23 @@ function Robot({ state, colors }: { state: RobotState; colors: ThemeColors }) {
       root.current.position.y = 0.2 + float + M.gy + M.droop;
       root.current.scale.set(1 + M.gsquash * 0.6, 1 - M.gsquash, 1 + M.gsquash * 0.6);
 
-      M.bodyYaw = damp(M.bodyYaw, Math.sin(t * 0.45) * 0.09 + (hovered.current ? look.current.yaw * 0.3 : 0), 3, dt);
+      M.bodyYaw = damp(M.bodyYaw, Math.sin(t * 0.45) * 0.09, 3, dt);
       root.current.rotation.y = M.bodyYaw + M.gspin;
 
       const leanTarget = state === "listening" ? 0.08 : hovered.current ? 0.1 : state === "error" ? 0.05 : 0;
       M.lean = damp(M.lean, leanTarget, 4, dt);
-      M.tilt = damp(M.tilt, hovered.current ? -look.current.yaw * 0.15 : 0, 4, dt);
       root.current.rotation.x = M.lean + M.glean;
       // Thinking: a slow side-to-side rock, faded in/out so it never snaps.
       M.think = damp(M.think, state === "thinking" ? 1 : 0, 4, dt);
-      root.current.rotation.z = M.tilt + M.gtilt + M.think * Math.sin(t * 1.8) * 0.05;
+      root.current.rotation.z = M.gtilt + M.think * Math.sin(t * 1.8) * 0.05;
     }
 
     // ----- Head -----
     if (head.current) {
-      let yaw = look.current.yaw;
-      let pitch = look.current.pitch;
-      let roll = -look.current.yaw * 0.15;
+      // Faces forward by default; states and gestures turn it.
+      let yaw = 0;
+      let pitch = 0;
+      let roll = 0;
       if (state === "listening") {
         // Toward the chat column / input box (right and below).
         yaw = 0.5;
