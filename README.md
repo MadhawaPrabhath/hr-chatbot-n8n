@@ -1,7 +1,7 @@
 # HR Assistant Chatbot (n8n + Gemini + Pinecone RAG)
 
 An AI chatbot that answers employee HR questions (leave, working hours, salary, benefits)
-using the company's HR policy documents. Built with n8n as a rebuild of my internship project.
+using the company's HR policy documents. Built with n8n as a rebuild of my Freelancing Project.
 
 ## Example
 > **Employee:** Can I work from home during probation?
